@@ -93,8 +93,13 @@ def checkCAsettings(args):
 
 def getSettings(argv):
     settings = {}
-    defaults = ConfigManager().defaults
+    defaults = ConfigManager()
     args, msg = parse_cmd_args(argv)
+
+    if args.add_config:
+        defaults.reload(add_config_file=args.add_config)
+    defaults = defaults.defaults
+
     if args and defaults:
         settings = merge_defaults_and_args(defaults, args)
     elif args:
@@ -160,9 +165,13 @@ class ConfigManager(object, metaclass=Singleton):
             self.__defaults = self.parse_defaults()
         return self.__defaults
 
-    def reload(self):
+    def reload(self, add_config_file=None):
         options = {}
         self.__sectOptions = {}
+
+        if add_config_file:
+            self.configFiles.append(add_config_file)
+
         if self.configFiles:
             for config in self.configFiles:
                 options.update(self.readConfigFile(config))
@@ -200,7 +209,6 @@ class ConfigManager(object, metaclass=Singleton):
 
 
 class Password(argparse.Action):
-    defaults = ConfigManager().defaults
 
     def __call__(self, parser, namespace, values, option_string):
         if values is None:
@@ -252,6 +260,8 @@ def parse_cmd_args(argv):
                         help='Enter your apiKey value:')
     parser.add_argument('-d', '--includeDiskData', action="store", choices=["yes", "no"], default=None,
                         help='Use or not the historical data from disk (Default from config.ini: "no")')
+    parser.add_argument('--add-config', action='store', default=None,
+                        help='Add additional configuration to overrule the default settings')
 
     args = parser.parse_args(argv)
     return args, ''
